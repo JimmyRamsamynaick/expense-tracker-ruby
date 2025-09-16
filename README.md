@@ -16,7 +16,7 @@ Un gestionnaire de dépenses personnelles complet développé en Ruby.
 ## 📦 Installation
 
 ```bash
-git clone https://github.com/votre-username/expense-tracker-ruby.git
+git clone https://github.com/JimmyRamsamynaick/expense-tracker-ruby
 cd expense-tracker-ruby
 bundle install
 ```

@@ -1,0 +1,177 @@
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-list me-2"></i>
+            Gestion des Dépenses
+        </h1>
+    </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3><%= @expenses.length %></h3>
+                <p class="mb-0">Dépenses totales</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3><%= sprintf("%.2f", @total) %> €</h3>
+                <p class="mb-0">Montant total</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3><%= @expenses.length > 0 ? sprintf("%.2f", @total / @expenses.length) : "0.00" %> €</h3>
+                <p class="mb-0">Dépense moyenne</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulaire d'ajout -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Nouvelle Dépense
+                </h5>
+            </div>
+            <div class="card-body">
+                <form action="/expenses" method="POST" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="amount" class="form-label">Montant (€) *</label>
+                        <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="category" class="form-label">Catégorie *</label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="">Choisir une catégorie...</option>
+                            <% @categories.each do |category| %>
+                                <option value="<%= category %>"><%= category %></option>
+                            <% end %>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date" class="form-label">Date *</label>
+                        <input type="date" class="form-control" id="date" name="date" value="<%= Date.today %>" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="description" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="description" name="description" placeholder="Description optionnelle...">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>
+                            Ajouter la Dépense
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des dépenses -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Liste des Dépenses
+                </h5>
+            </div>
+            <div class="card-body">
+                <% if @expenses.empty? %>
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Aucune dépense enregistrée</h4>
+                        <p class="text-muted">Commencez par ajouter votre première dépense avec le formulaire ci-dessus.</p>
+                    </div>
+                <% else %>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Montant</th>
+                                    <th>Catégorie</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% @expenses.each do |expense| %>
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-calendar-alt me-1 text-muted"></i>
+                                            <%= expense['date'] %>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary fs-6">
+                                                <%= sprintf("%.2f", expense['amount']) %> €
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-tag me-1"></i>
+                                                <%= expense['category'] %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <%= expense['description'] || '<em class="text-muted">Aucune description</em>' %>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="/expenses/<%= expense['id'] %>/edit" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteExpense('<%= expense['id'] %>')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% end %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% end %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteExpense(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette dépense ?')) {
+        fetch(`/expenses/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la suppression');
+        });
+    }
+}
+</script>

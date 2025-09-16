@@ -1,0 +1,162 @@
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tags me-2"></i>
+            Gestion des Catégories
+        </h1>
+    </div>
+</div>
+
+<!-- Formulaire d'ajout -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Ajouter une Catégorie
+                </h5>
+            </div>
+            <div class="card-body">
+                <form action="/categories" method="POST">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="name" placeholder="Nom de la nouvelle catégorie..." required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>
+                            Ajouter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informations
+                </h6>
+                <p class="card-text small mb-0">
+                    Les catégories vous permettent d'organiser vos dépenses. 
+                    Vous pouvez ajouter de nouvelles catégories ou supprimer celles qui ne sont plus utilisées.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des catégories -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Catégories Existantes (<%= @categories.length %>)
+                </h5>
+            </div>
+            <div class="card-body">
+                <% if @categories.empty? %>
+                    <div class="text-center py-4">
+                        <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucune catégorie</h5>
+                        <p class="text-muted">Ajoutez votre première catégorie avec le formulaire ci-dessus.</p>
+                    </div>
+                <% else %>
+                    <div class="row">
+                        <% @categories.each_with_index do |category, index| %>
+                            <% 
+                                # Calculer les statistiques pour cette catégorie
+                                category_expenses = @expenses.select { |e| e['category'] == category }
+                                category_total = category_expenses.sum { |e| e['amount'] }
+                                category_count = category_expenses.length
+                            %>
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-tag me-2 text-primary"></i>
+                                                    <%= category %>
+                                                </h6>
+                                                <div class="text-muted small">
+                                                    <div>
+                                                        <i class="fas fa-receipt me-1"></i>
+                                                        <%= category_count %> dépense<%= category_count > 1 ? 's' : '' %>
+                                                    </div>
+                                                    <div>
+                                                        <i class="fas fa-euro-sign me-1"></i>
+                                                        <%= sprintf("%.2f", category_total) %> €
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
+                                                        data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <button class="dropdown-item text-danger" 
+                                                                onclick="deleteCategory('<%= category %>')">
+                                                            <i class="fas fa-trash me-2"></i>
+                                                            Supprimer
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Barre de progression basée sur le pourcentage du total -->
+                                        <% if @expenses.length > 0 %>
+                                            <% 
+                                                total_all = @expenses.sum { |e| e['amount'] }
+                                                percentage = total_all > 0 ? (category_total / total_all * 100).round(1) : 0
+                                            %>
+                                            <div class="mt-2">
+                                                <div class="d-flex justify-content-between small text-muted">
+                                                    <span>Part du total</span>
+                                                    <span><%= percentage %>%</span>
+                                                </div>
+                                                <div class="progress" style="height: 4px;">
+                                                    <div class="progress-bar bg-primary" style="width: <%= percentage %>%"></div>
+                                                </div>
+                                            </div>
+                                        <% end %>
+                                    </div>
+                                </div>
+                            </div>
+                        <% end %>
+                    </div>
+                <% end %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteCategory(categoryName) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${categoryName}" ?\n\nToutes les dépenses de cette catégorie seront déplacées vers "Autres".`)) {
+        fetch(`/categories/${encodeURIComponent(categoryName)}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression de la catégorie');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la suppression de la catégorie');
+        });
+    }
+}
+</script>

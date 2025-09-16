@@ -1,0 +1,211 @@
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-download me-2"></i>
+            Export des Données
+        </h1>
+    </div>
+</div>
+
+<!-- Informations générales -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-database fa-2x mb-2"></i>
+                <h3><%= @expenses.length %></h3>
+                <p class="mb-0">Dépenses à exporter</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-euro-sign fa-2x mb-2"></i>
+                <h3><%= sprintf("%.2f", @expenses.sum { |e| e['amount'] }) %> €</h3>
+                <p class="mb-0">Montant total</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                <h3>
+                    <% if @expenses.length > 0 %>
+                        <%= @expenses.map { |e| e['date'] }.uniq.length %>
+                    <% else %>
+                        0
+                    <% end %>
+                </h3>
+                <p class="mb-0">Jours différents</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Options d'export -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-csv me-2"></i>
+                    Export CSV
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Exportez vos dépenses au format CSV pour les utiliser dans Excel, Google Sheets ou d'autres applications.
+                </p>
+                <div class="mb-3">
+                    <h6>Colonnes incluses :</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Date</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Montant</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Catégorie</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Description</li>
+                    </ul>
+                </div>
+                <% if @expenses.empty? %>
+                    <button class="btn btn-secondary" disabled>
+                        <i class="fas fa-download me-1"></i>
+                        Aucune donnée à exporter
+                    </button>
+                <% else %>
+                    <a href="/export/csv" class="btn btn-primary">
+                        <i class="fas fa-download me-1"></i>
+                        Télécharger CSV
+                    </a>
+                <% end %>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-code me-2"></i>
+                    Export JSON
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Exportez vos données au format JSON pour les utiliser dans d'autres applications ou pour faire une sauvegarde complète.
+                </p>
+                <div class="mb-3">
+                    <h6>Données incluses :</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Toutes les informations</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Métadonnées (ID, dates de création)</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Format structuré</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Compatible pour réimport</li>
+                    </ul>
+                </div>
+                <% if @expenses.empty? %>
+                    <button class="btn btn-secondary" disabled>
+                        <i class="fas fa-download me-1"></i>
+                        Aucune donnée à exporter
+                    </button>
+                <% else %>
+                    <a href="/export/json" class="btn btn-success">
+                        <i class="fas fa-download me-1"></i>
+                        Télécharger JSON
+                    </a>
+                <% end %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aperçu des données -->
+<% unless @expenses.empty? %>
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-eye me-2"></i>
+                        Aperçu des Données (5 dernières dépenses)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Montant</th>
+                                    <th>Catégorie</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% @expenses.sort_by { |e| e['date'] }.reverse.first(5).each do |expense| %>
+                                    <tr>
+                                        <td><%= expense['date'] %></td>
+                                        <td>
+                                            <span class="badge bg-primary">
+                                                <%= sprintf("%.2f", expense['amount']) %> €
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                <%= expense['category'] %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <%= expense['description'] || '<em class="text-muted">Aucune description</em>' %>
+                                        </td>
+                                    </tr>
+                                <% end %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% if @expenses.length > 5 %>
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                ... et <%= @expenses.length - 5 %> autre<%= @expenses.length - 5 > 1 ? 's' : '' %> dépense<%= @expenses.length - 5 > 1 ? 's' : '' %>
+                            </small>
+                        </div>
+                    <% end %>
+                </div>
+            </div>
+        </div>
+    </div>
+<% end %>
+
+<!-- Informations sur l'export -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informations sur l'Export
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Format CSV :</h6>
+                        <ul class="small">
+                            <li>Compatible avec Excel, Google Sheets, LibreOffice</li>
+                            <li>Séparateur : virgule (,)</li>
+                            <li>Encodage : UTF-8</li>
+                            <li>En-têtes inclus</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Format JSON :</h6>
+                        <ul class="small">
+                            <li>Format structuré pour développeurs</li>
+                            <li>Toutes les métadonnées incluses</li>
+                            <li>Compatible pour réimport</li>
+                            <li>Format lisible et indenté</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

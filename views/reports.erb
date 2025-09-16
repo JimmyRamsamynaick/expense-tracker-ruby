@@ -1,0 +1,266 @@
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-bar me-2"></i>
+            Rapports et Statistiques
+        </h1>
+    </div>
+</div>
+
+<!-- Statistiques générales -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-euro-sign fa-2x mb-2"></i>
+                <h3><%= sprintf("%.2f", @total) %> €</h3>
+                <p class="mb-0">Total des Dépenses</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-receipt fa-2x mb-2"></i>
+                <h3><%= @count %></h3>
+                <p class="mb-0">Nombre de Dépenses</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calculator fa-2x mb-2"></i>
+                <h3><%= sprintf("%.2f", @average) %> €</h3>
+                <p class="mb-0">Dépense Moyenne</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-tags fa-2x mb-2"></i>
+                <h3><%= @categories.length %></h3>
+                <p class="mb-0">Catégories Actives</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-pie-chart me-2"></i>
+                    Répartition par Catégorie
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Évolution Mensuelle
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableaux détaillés -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Dépenses par Catégorie
+                </h5>
+            </div>
+            <div class="card-body">
+                <% if @category_totals.empty? %>
+                    <div class="text-center py-3">
+                        <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">Aucune donnée disponible</p>
+                    </div>
+                <% else %>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Catégorie</th>
+                                    <th>Montant</th>
+                                    <th>Nombre</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% @category_totals.each do |category| %>
+                                    <% percentage = @total > 0 ? (category[:total] / @total * 100).round(1) : 0 %>
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                <%= category[:name] %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong><%= sprintf("%.2f", category[:total]) %> €</strong>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted"><%= category[:count] %></span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                    <div class="progress-bar bg-primary" style="width: <%= percentage %>%"></div>
+                                                </div>
+                                                <small><%= percentage %>%</small>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% end %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% end %>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    Dépenses par Mois
+                </h5>
+            </div>
+            <div class="card-body">
+                <% if @monthly_totals.empty? %>
+                    <div class="text-center py-3">
+                        <i class="fas fa-calendar fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">Aucune donnée mensuelle</p>
+                    </div>
+                <% else %>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Mois</th>
+                                    <th>Montant</th>
+                                    <th>Nombre</th>
+                                    <th>Moyenne</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% @monthly_totals.each do |month_data| %>
+                                    <tr>
+                                        <td>
+                                            <strong><%= month_data[:month] %></strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">
+                                                <%= sprintf("%.2f", month_data[:total]) %> €
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted"><%= month_data[:count] %></span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                <%= month_data[:count] > 0 ? sprintf("%.2f", month_data[:total] / month_data[:count]) : "0.00" %> €
+                                            </small>
+                                        </td>
+                                    </tr>
+                                <% end %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% end %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Données pour les graphiques
+const categoryData = {
+    labels: [<%= @category_totals.map { |c| "'#{c[:name]}'" }.join(', ') %>],
+    datasets: [{
+        data: [<%= @category_totals.map { |c| c[:total] }.join(', ') %>],
+        backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+        ]
+    }]
+};
+
+const monthlyData = {
+    labels: [<%= @monthly_totals.map { |m| "'#{m[:month]}'" }.join(', ') %>],
+    datasets: [{
+        label: 'Dépenses (€)',
+        data: [<%= @monthly_totals.map { |m| m[:total] }.join(', ') %>],
+        borderColor: '#36A2EB',
+        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+        tension: 0.4
+    }]
+};
+
+// Configuration des graphiques
+const categoryConfig = {
+    type: 'doughnut',
+    data: categoryData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+};
+
+const monthlyConfig = {
+    type: 'line',
+    data: monthlyData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value + ' €';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+};
+
+// Initialisation des graphiques
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+    
+    new Chart(categoryCtx, categoryConfig);
+    new Chart(monthlyCtx, monthlyConfig);
+});
+</script>
