@@ -30,12 +30,14 @@ class ExpenseTracker
       puts "="*50
       puts "1. Ajouter une dépense"
       puts "2. Voir toutes les dépenses"
-      puts "3. Voir les rapports"
-      puts "4. Gérer les catégories"
-      puts "5. Exporter les données"
-      puts "6. Quitter"
+      puts "3. Modifier une dépense"
+      puts "4. Supprimer une dépense"
+      puts "5. Voir les rapports"
+      puts "6. Gérer les catégories"
+      puts "7. Exporter les données"
+      puts "8. Quitter"
       puts "="*50
-      print "Choisissez une option (1-6): "
+      print "Choisissez une option (1-8): "
       
       choice = gets.chomp
       
@@ -45,16 +47,20 @@ class ExpenseTracker
       when '2'
         list_expenses
       when '3'
-        show_reports_menu
+        edit_expense_interactive
       when '4'
-        manage_categories
+        delete_expense_interactive
       when '5'
-        export_menu
+        show_reports_menu
       when '6'
+        manage_categories
+      when '7'
+        export_menu
+      when '8'
         puts "👋 Au revoir !"
         break
       else
-        puts "❌ Option invalide. Veuillez choisir entre 1 et 6."
+        puts "❌ Option invalide. Veuillez choisir entre 1 et 8."
       end
     end
   end
@@ -119,13 +125,94 @@ class ExpenseTracker
     end
     
     total = 0
-    @expenses.sort_by { |e| e['date'] }.reverse.each do |expense|
-      puts "#{expense['date']} | #{expense['amount']}€ | #{expense['category']} | #{expense['description']}"
+    @expenses.sort_by { |e| e['date'] }.reverse.each_with_index do |expense, index|
+      puts "#{index + 1}. #{expense['date']} | #{expense['amount']}€ | #{expense['category']} | #{expense['description']}"
       total += expense['amount']
     end
     
     puts "-" * 50
     puts "💰 Total: #{total}€"
+  end
+  
+  def edit_expense_interactive
+    puts "\n✏️ MODIFIER UNE DÉPENSE"
+    puts "-" * 30
+    
+    if @expenses.empty?
+      puts "📭 Aucune dépense à modifier."
+      return
+    end
+    
+    list_expenses
+    print "\nNuméro de la dépense à modifier: "
+    index = gets.chomp.to_i - 1
+    
+    if index < 0 || index >= @expenses.length
+      puts "❌ Numéro invalide."
+      return
+    end
+    
+    expense = @expenses[index]
+    puts "\nDépense actuelle: #{expense['amount']}€ - #{expense['category']} - #{expense['description']}"
+    
+    print "Nouveau montant (€) [#{expense['amount']}]: "
+    new_amount = gets.chomp
+    expense['amount'] = new_amount.to_f unless new_amount.empty?
+    
+    puts "\nCatégories disponibles:"
+    @categories.each_with_index { |cat, i| puts "#{i + 1}. #{cat}" }
+    print "Nouvelle catégorie [#{expense['category']}]: "
+    new_category = gets.chomp
+    unless new_category.empty?
+      if new_category.match?(/^\d+$/)
+        category_index = new_category.to_i - 1
+        expense['category'] = @categories[category_index] if category_index >= 0 && category_index < @categories.length
+      else
+        expense['category'] = new_category
+        add_category(new_category) unless @categories.include?(new_category)
+      end
+    end
+    
+    print "Nouvelle description [#{expense['description']}]: "
+    new_description = gets.chomp
+    expense['description'] = new_description unless new_description.empty?
+    
+    expense['updated_at'] = Time.now.to_s
+    save_expenses
+    
+    puts "✅ Dépense modifiée avec succès !"
+  end
+  
+  def delete_expense_interactive
+    puts "\n🗑️ SUPPRIMER UNE DÉPENSE"
+    puts "-" * 30
+    
+    if @expenses.empty?
+      puts "📭 Aucune dépense à supprimer."
+      return
+    end
+    
+    list_expenses
+    print "\nNuméro de la dépense à supprimer: "
+    index = gets.chomp.to_i - 1
+    
+    if index < 0 || index >= @expenses.length
+      puts "❌ Numéro invalide."
+      return
+    end
+    
+    expense = @expenses[index]
+    puts "\nDépense à supprimer: #{expense['amount']}€ - #{expense['category']} - #{expense['description']}"
+    print "Êtes-vous sûr ? (o/N): "
+    
+    confirmation = gets.chomp.downcase
+    if confirmation == 'o' || confirmation == 'oui'
+      @expenses.delete_at(index)
+      save_expenses
+      puts "✅ Dépense supprimée avec succès !"
+    else
+      puts "❌ Suppression annulée."
+    end
   end
   
   def show_reports_menu
