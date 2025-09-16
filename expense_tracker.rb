@@ -7,6 +7,7 @@ require 'date'
 
 class ExpenseTracker
   DATA_FILE = 'expenses.json'
+  CATEGORIES_FILE = 'categories.json'
   
   def initialize
     @expenses = load_expenses
@@ -255,8 +256,152 @@ class ExpenseTracker
   end
   
   def manage_categories
-    # TODO: Implémenter la gestion des catégories
-    puts "🚧 Gestion des catégories en cours de développement..."
+    puts "\n🏷️ GESTION DES CATÉGORIES"
+    puts "-" * 30
+    puts "1. Voir toutes les catégories"
+    puts "2. Ajouter une catégorie"
+    puts "3. Supprimer une catégorie"
+    puts "4. Renommer une catégorie"
+    puts "5. Retour au menu principal"
+    print "Choisissez une option: "
+    
+    choice = gets.chomp
+    case choice
+    when '1'
+      list_categories
+    when '2'
+      add_category_interactive
+    when '3'
+      delete_category_interactive
+    when '4'
+      rename_category_interactive
+    when '5'
+      return
+    else
+      puts "❌ Option invalide."
+    end
+  end
+  
+  def list_categories
+    puts "\n📋 CATÉGORIES DISPONIBLES"
+    puts "-" * 30
+    
+    if @categories.empty?
+      puts "📭 Aucune catégorie disponible."
+      return
+    end
+    
+    @categories.each_with_index do |category, index|
+      expense_count = @expenses.count { |e| e['category'] == category }
+      total_amount = @expenses.select { |e| e['category'] == category }.sum { |e| e['amount'] }
+      puts "#{index + 1}. #{category} (#{expense_count} dépenses, #{total_amount}€)"
+    end
+  end
+  
+  def add_category_interactive
+    puts "\n➕ AJOUTER UNE CATÉGORIE"
+    puts "-" * 30
+    print "Nom de la nouvelle catégorie: "
+    
+    category = gets.chomp.strip
+    if category.empty?
+      puts "❌ Le nom de la catégorie ne peut pas être vide."
+      return
+    end
+    
+    if @categories.include?(category)
+      puts "❌ Cette catégorie existe déjà."
+      return
+    end
+    
+    @categories << category
+    save_categories
+    puts "✅ Catégorie '#{category}' ajoutée avec succès !"
+  end
+  
+  def delete_category_interactive
+    puts "\n🗑️ SUPPRIMER UNE CATÉGORIE"
+    puts "-" * 30
+    
+    if @categories.empty?
+      puts "📭 Aucune catégorie à supprimer."
+      return
+    end
+    
+    list_categories
+    print "\nNuméro de la catégorie à supprimer: "
+    index = gets.chomp.to_i - 1
+    
+    if index < 0 || index >= @categories.length
+      puts "❌ Numéro invalide."
+      return
+    end
+    
+    category = @categories[index]
+    expense_count = @expenses.count { |e| e['category'] == category }
+    
+    if expense_count > 0
+      puts "⚠️ Cette catégorie contient #{expense_count} dépense(s)."
+      print "Voulez-vous vraiment la supprimer ? Les dépenses seront déplacées vers 'Autres' (o/N): "
+      
+      confirmation = gets.chomp.downcase
+      if confirmation == 'o' || confirmation == 'oui'
+        # Déplacer les dépenses vers "Autres"
+        @expenses.each { |e| e['category'] = 'Autres' if e['category'] == category }
+        @categories.delete_at(index)
+        add_category('Autres') unless @categories.include?('Autres')
+        save_categories
+        save_expenses
+        puts "✅ Catégorie supprimée et dépenses déplacées vers 'Autres'."
+      else
+        puts "❌ Suppression annulée."
+      end
+    else
+      @categories.delete_at(index)
+      save_categories
+      puts "✅ Catégorie '#{category}' supprimée avec succès !"
+    end
+  end
+  
+  def rename_category_interactive
+    puts "\n✏️ RENOMMER UNE CATÉGORIE"
+    puts "-" * 30
+    
+    if @categories.empty?
+      puts "📭 Aucune catégorie à renommer."
+      return
+    end
+    
+    list_categories
+    print "\nNuméro de la catégorie à renommer: "
+    index = gets.chomp.to_i - 1
+    
+    if index < 0 || index >= @categories.length
+      puts "❌ Numéro invalide."
+      return
+    end
+    
+    old_category = @categories[index]
+    print "Nouveau nom pour '#{old_category}': "
+    new_category = gets.chomp.strip
+    
+    if new_category.empty?
+      puts "❌ Le nom de la catégorie ne peut pas être vide."
+      return
+    end
+    
+    if @categories.include?(new_category)
+      puts "❌ Cette catégorie existe déjà."
+      return
+    end
+    
+    # Mettre à jour toutes les dépenses avec l'ancien nom
+    @expenses.each { |e| e['category'] = new_category if e['category'] == old_category }
+    @categories[index] = new_category
+    
+    save_categories
+    save_expenses
+    puts "✅ Catégorie renommée de '#{old_category}' vers '#{new_category}' !"
   end
   
   def export_menu
@@ -276,18 +421,36 @@ class ExpenseTracker
   end
   
   def load_categories
+    return JSON.parse(File.read(CATEGORIES_FILE)) if File.exist?(CATEGORIES_FILE)
+    
     default_categories = [
       'Alimentation', 'Transport', 'Logement', 'Santé', 
       'Loisirs', 'Vêtements', 'Éducation', 'Autres'
     ]
     
-    # TODO: Charger depuis un fichier de configuration
+    save_categories_to_file(default_categories)
+    default_categories
+  rescue JSON::ParserError
+    default_categories = [
+      'Alimentation', 'Transport', 'Logement', 'Santé', 
+      'Loisirs', 'Vêtements', 'Éducation', 'Autres'
+    ]
+    save_categories_to_file(default_categories)
     default_categories
   end
   
+  def save_categories
+    save_categories_to_file(@categories)
+  end
+  
+  def save_categories_to_file(categories)
+    File.write(CATEGORIES_FILE, JSON.pretty_generate(categories))
+  end
+  
   def add_category(category)
-    @categories << category unless @categories.include?(category)
-    # TODO: Sauvegarder les catégories
+    return if @categories.include?(category)
+    @categories << category
+    save_categories
   end
   
   def generate_id
